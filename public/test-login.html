@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test - BusinessZen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #0070f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0051cc;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .credentials {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #ffeaa7;
+        }
+        .credentials h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .cred-item {
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .quick-fill {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 4px 8px;
+            background: #0070f3;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .quick-fill:hover {
+            background: #0051cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Login Test Page</h1>
+        <p class="subtitle">Test the authentication system directly</p>
+        
+        <div class="credentials">
+            <h3>Demo Credentials</h3>
+            <div class="cred-item">
+                <strong>Demo User:</strong> user@demo.com / demo123
+                <span class="quick-fill" onclick="fillDemo()">Quick Fill</span>
+            </div>
+            <div class="cred-item">
+                <strong>Admin:</strong> admin@demo.com / admin123
+                <span class="quick-fill" onclick="fillAdmin()">Quick Fill</span>
+            </div>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" required placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required placeholder="Enter your password">
+            </div>
+            <button type="submit" id="submitBtn">Sign In</button>
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script type="module">
+        const SUPABASE_URL = 'https://dadoixwtqjhglapoxgvg.supabase.co';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhZG9peHd0cWpoZ2xhcG94Z3ZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNDgwMDAsImV4cCI6MjA3NzkyNDAwMH0.CfTvyMuBvIEqUZjW07wnum389tPQMFrsnaBW3xMtzxk';
+
+        const form = document.getElementById('loginForm');
+        const resultDiv = document.getElementById('result');
+        const submitBtn = document.getElementById('submitBtn');
+
+        window.fillDemo = function() {
+            document.getElementById('email').value = 'user@demo.com';
+            document.getElementById('password').value = 'demo123';
+        };
+
+        window.fillAdmin = function() {
+            document.getElementById('email').value = 'admin@demo.com';
+            document.getElementById('password').value = 'admin123';
+        };
+
+        function showResult(message, type) {
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing in...';
+            showResult('Authenticating with Supabase...', 'info');
+
+            try {
+                // Step 1: Authenticate with Supabase
+                const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': ANON_KEY
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const authData = await authResponse.json();
+
+                if (!authResponse.ok || !authData.access_token) {
+                    showResult(`❌ Authentication failed: ${authData.error_description || authData.msg || 'Invalid credentials'}`, 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign In';
+                    return;
+                }
+
+                showResult(`✅ Authenticated! User ID: ${authData.user.id}`, 'success');
+
+                // Step 2: Fetch user role
+                showResult('Fetching user role...', 'info');
+                
+                const roleResponse = await fetch('http://localhost:3000/api/auth/user-role', {
+                    headers: {
+                        'Authorization': `Bearer ${authData.access_token}`
+                    }
+                });
+
+                if (!roleResponse.ok) {
+                    const errorData = await roleResponse.json();
+                    showResult(`⚠️ Role fetch failed: ${errorData.error || 'Unknown error'}. Defaulting to dashboard.`, 'error');
+                    setTimeout(() => {
+                        window.location.href = 'http://localhost:3000/dashboard';
+                    }, 2000);
+                    return;
+                }
+
+                const roleData = await roleResponse.json();
+                const role = roleData.role;
+
+                showResult(`✅ Login successful! Role: ${role}. Redirecting...`, 'success');
+
+                // Step 3: Redirect based on role
+                setTimeout(() => {
+                    if (role === 'admin') {
+                        window.location.href = 'http://localhost:3000/admin';
+                    } else {
+                        window.location.href = 'http://localhost:3000/dashboard';
+                    }
+                }, 1500);
+
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
+            }
+        });
+    </script>
+</body>
+</html>

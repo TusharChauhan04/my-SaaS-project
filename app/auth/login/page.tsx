@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -23,23 +24,46 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      // Authenticate with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.message || "Login failed")
+      if (authError) {
+        setError(authError.message || "Invalid email or password")
         setLoading(false)
         return
       }
 
-      // Login successful
-      router.push(data.role === "admin" ? "/admin" : "/dashboard")
+      if (!authData.user) {
+        setError("Authentication failed")
+        setLoading(false)
+        return
+      }
+
+      // Get user role from API (uses service role key to bypass RLS)
+      const response = await fetch("/api/auth/user-role", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authData.session?.access_token}`
+        }
+      })
+
+      if (!response.ok) {
+        console.error('Failed to fetch user role')
+        // Default to dashboard if role fetch fails
+        router.push("/dashboard")
+        return
+      }
+
+      const { role } = await response.json()
+
+      // Redirect based on role
+      router.push(role === "admin" ? "/admin" : "/dashboard")
     } catch (err) {
+      console.error('Login error:', err)
       setError("An error occurred. Please try again.")
       setLoading(false)
     }

@@ -48,7 +48,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Signup successful & verified instantly!',
+      message: 'Signup successful! Please login with your credentials.',
+      redirectTo: '/auth/login',
       user,
     })
   } catch (error: any) {

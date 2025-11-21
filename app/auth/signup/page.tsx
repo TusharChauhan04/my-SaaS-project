@@ -26,8 +26,13 @@ export default function SignupPage() {
       })
       const data = await res.json()
       console.log('🔍 Signup response:', data)
-      if (data.success) router.push('/dashboard')
-      else alert(data.message)
+      if (data.success) {
+        // Redirect to login page after successful signup
+        alert(data.message || 'Account created successfully! Please login.')
+        router.push('/auth/login')
+      } else {
+        alert(data.message || 'Signup failed')
+      }
     } catch (err: any) {
       alert('Something went wrong: ' + err.message)
     } finally {
