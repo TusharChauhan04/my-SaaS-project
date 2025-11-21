@@ -24,25 +24,40 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      console.log('🔐 Starting login process...')
+
       // Authenticate with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
+      console.log('📡 Supabase auth response:', { authData, authError })
+
       if (authError) {
+        console.error('❌ Auth error:', authError)
         setError(authError.message || "Invalid email or password")
         setLoading(false)
         return
       }
 
       if (!authData.user) {
+        console.error('❌ No user in auth data')
         setError("Authentication failed")
         setLoading(false)
         return
       }
 
+      console.log('✅ User authenticated:', authData.user.email)
+
+      // Set auth token cookie for middleware
+      if (authData.session?.access_token) {
+        document.cookie = `auth-token=${authData.session.access_token}; path=/; max-age=3600; SameSite=Lax`
+        console.log('🍪 Auth cookie set')
+      }
+
       // Get user role from API (uses service role key to bypass RLS)
+      console.log('🔍 Fetching user role...')
       const response = await fetch("/api/auth/user-role", {
         method: "GET",
         headers: {
@@ -51,19 +66,26 @@ export default function LoginPage() {
         }
       })
 
+      console.log('📡 User role API response status:', response.status)
+
       if (!response.ok) {
-        console.error('Failed to fetch user role')
+        console.error('❌ Failed to fetch user role, status:', response.status)
         // Default to dashboard if role fetch fails
-        router.push("/dashboard")
+        console.log('🔄 Redirecting to /dashboard (fallback)...')
+        window.location.href = "/dashboard"
         return
       }
 
       const { role } = await response.json()
+      console.log('✅ User role:', role)
 
       // Redirect based on role
-      router.push(role === "admin" ? "/admin" : "/dashboard")
+      const redirectPath = role === "admin" ? "/admin" : "/dashboard"
+      console.log(`🔄 Redirecting to ${redirectPath}...`)
+      window.location.href = redirectPath
+      console.log('✅ window.location.href set')
     } catch (err) {
-      console.error('Login error:', err)
+      console.error('❌ Login error:', err)
       setError("An error occurred. Please try again.")
       setLoading(false)
     }

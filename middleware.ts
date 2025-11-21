@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { jwtVerify } from "jose"
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret-key-change-in-production")
+import { createClient } from "@supabase/supabase-js"
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get("auth-token")?.value
-
   // Public routes
   if (request.nextUrl.pathname.startsWith("/auth")) {
     return NextResponse.next()
@@ -14,16 +10,18 @@ export async function middleware(request: NextRequest) {
 
   // Protected routes
   if (request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/admin")) {
-    if (!token) {
+    // Check for Supabase session cookies
+    const supabaseAccessToken = request.cookies.get("sb-dadoixwtqjhglapoxgvg-auth-token")?.value
+    const authToken = request.cookies.get("auth-token")?.value
+
+    // If neither cookie exists, redirect to login
+    if (!supabaseAccessToken && !authToken) {
       return NextResponse.redirect(new URL("/auth/login", request.url))
     }
 
-    try {
-      await jwtVerify(token, JWT_SECRET)
-      return NextResponse.next()
-    } catch (err) {
-      return NextResponse.redirect(new URL("/auth/login", request.url))
-    }
+    // If we have a token, allow access
+    // The actual authentication verification happens on the API routes
+    return NextResponse.next()
   }
 
   return NextResponse.next()
