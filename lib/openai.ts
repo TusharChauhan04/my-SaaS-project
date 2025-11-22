@@ -142,4 +142,28 @@ Format as JSON with clear sections and actionable steps.`
     }
 }
 
+// Generic chat completion function for Finance and other features
+export async function generateChatCompletion(
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    options?: {
+        model?: string
+        temperature?: number
+        maxTokens?: number
+    }
+) {
+    try {
+        const completion = await openai.chat.completions.create({
+            model: options?.model || 'gpt-4-turbo-preview',
+            messages,
+            temperature: options?.temperature || 0.7,
+            max_tokens: options?.maxTokens || 2000,
+        })
+
+        return completion
+    } catch (error) {
+        console.error('OpenAI API Error:', error)
+        throw new Error('Failed to generate chat completion')
+    }
+}
+
 export default openai
